@@ -12,7 +12,7 @@ repquota -a | repquota-pretty.py
 ══════════════════════════════════════════════ /dev/sda1 ══
  alice    │  12,3 Go / 20 Go  │ ████████████░░░░  61% │  45k fichiers
  bob      │   8,7 Go / 20 Go  │ ████████░░░░░░░░  43% │  12k fichiers
- charlie  │  19,1 Go / 20 Go  │ ███████████████▓  95% │  80k fichiers  ⚠
+ charlie  │  19,1 Go / 20 Go  │ ███████████████░  95% │  80k fichiers  ⚠
 ```
 
 ## Installation

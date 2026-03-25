@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-repquota-pretty.py � Affichage lisible de la sortie de repquota -a
+repquota-pretty.py — Affichage lisible de la sortie de repquota -a
 Usage:
     repquota -a | repquota-pretty.py
     repquota-pretty.py < repquota_output.txt
@@ -12,7 +12,7 @@ import re
 import argparse
 
 
-# -- Couleurs ANSI --------------------------------------------------------------
+# ── Couleurs ANSI ──────────────────────────────────────────────────────────────
 
 class C:
     RESET   = "\033[0m"
@@ -33,12 +33,12 @@ class C:
             setattr(cls, attr, "")
 
 
-# -- Conversion tailles ---------------------------------------------------------
+# ── Conversion tailles ─────────────────────────────────────────────────────────
 
 def human_size(kb: int) -> str:
     """Convertit des Ko en taille lisible."""
     if kb == 0:
-        return f"{C.DIM}�{C.RESET}"
+        return f"{C.DIM}—{C.RESET}"
     units = [("To", 1024**3), ("Go", 1024**2), ("Mo", 1024), ("Ko", 1)]
     for suffix, divisor in units:
         if kb >= divisor:
@@ -55,7 +55,7 @@ def human_size(kb: int) -> str:
 def human_count(n: int) -> str:
     """Nombre de fichiers, lisible."""
     if n == 0:
-        return f"{C.DIM}�{C.RESET}"
+        return f"{C.DIM}—{C.RESET}"
     if n >= 1_000_000:
         return f"{n/1_000_000:.1f}M"
     if n >= 1_000:
@@ -66,7 +66,7 @@ def human_count(n: int) -> str:
 def pct_bar(used: int, limit: int, width: int = 20) -> str:
     """Barre de progression avec couleur selon le taux."""
     if limit == 0:
-        return f"{C.DIM}{'�' * width} illimit�{C.RESET}"
+        return f"{C.DIM}{'░' * width} illimité{C.RESET}"
     pct = min(used / limit * 100, 100)
     filled = round(pct / 100 * width)
     empty = width - filled
@@ -78,7 +78,7 @@ def pct_bar(used: int, limit: int, width: int = 20) -> str:
     else:
         color = C.GREEN
 
-    bar = f"{color}{'�' * filled}{C.GRAY}{'�' * empty}{C.RESET}"
+    bar = f"{color}{'█' * filled}{C.GRAY}{'░' * empty}{C.RESET}"
     pct_str = f"{pct:5.1f}%"
     if pct >= 95:
         pct_str = f"{C.RED}{C.BOLD}{pct_str}{C.RESET}"
@@ -90,7 +90,7 @@ def pct_bar(used: int, limit: int, width: int = 20) -> str:
     return f"{bar} {pct_str}"
 
 
-# -- Parsing --------------------------------------------------------------------
+# ── Parsing ────────────────────────────────────────────────────────────────────
 
 def parse_repquota(lines: list[str]) -> list[dict]:
     """Parse la sortie de repquota -a."""
@@ -106,7 +106,7 @@ def parse_repquota(lines: list[str]) -> list[dict]:
         r"Block grace time:\s*(.+?);\s*Inode grace time:\s*(.+)"
     )
     # Format: user  +/-  block_used  block_soft  block_hard  [grace]  file_used  file_soft  file_hard  [grace]
-    # Le +/- peut �tre --, +-, -+ ou ++
+    # Le +/- peut être --, +-, -+ ou ++
     entry_re = re.compile(
         r"^(\S+)\s+([+-][+-])\s+"
         r"(\d+)\s+(\d+)\s+(\d+)\s*"
@@ -154,12 +154,12 @@ def parse_repquota(lines: list[str]) -> list[dict]:
     return entries
 
 
-# -- Affichage ------------------------------------------------------------------
+# ── Affichage ──────────────────────────────────────────────────────────────────
 
 def print_report(entries: list[dict], sort_by: str = "used", show_zero: bool = False):
-    """Affiche le rapport format�."""
+    """Affiche le rapport formaté."""
     if not entries:
-        print(f"{C.RED}Aucune entr�e trouv�e. V�rifiez le format d'entr�e.{C.RESET}")
+        print(f"{C.RED}Aucune entrée trouvée. Vérifiez le format d'entrée.{C.RESET}")
         return
 
     # Grouper par device
@@ -168,7 +168,7 @@ def print_report(entries: list[dict], sort_by: str = "used", show_zero: bool = F
         devices.setdefault(e["device"], []).append(e)
 
     for device, dev_entries in devices.items():
-        # Filtrer les entr�es sans usage si demand�
+        # Filtrer les entrées sans usage si demandé
         if not show_zero:
             dev_entries = [e for e in dev_entries if e["block_used"] > 0 or e["file_used"] > 0]
 
@@ -182,7 +182,7 @@ def print_report(entries: list[dict], sort_by: str = "used", show_zero: bool = F
             def sort_pct(e):
                 if e["block_soft"] > 0:
                     return e["block_used"] / e["block_soft"]
-                return -1  # illimit� en bas
+                return -1  # illimité en bas
             dev_entries.sort(key=sort_pct, reverse=True)
         elif sort_by == "name":
             dev_entries.sort(key=lambda e: e["user"])
@@ -193,26 +193,26 @@ def print_report(entries: list[dict], sort_by: str = "used", show_zero: bool = F
         total_used = sum(e["block_used"] for e in dev_entries)
         total_files = sum(e["file_used"] for e in dev_entries)
 
-        # En-t�te device
+        # En-tête device
         print()
-        print(f"{C.BOLD}{C.CYAN}{'-' * 90}{C.RESET}")
-        print(f"{C.BOLD}{C.CYAN}  ?? {device}{C.RESET}")
+        print(f"{C.BOLD}{C.CYAN}{'═' * 90}{C.RESET}")
+        print(f"{C.BOLD}{C.CYAN}  📁 {device}{C.RESET}")
         grace_info = dev_entries[0].get("block_grace_policy", "")
         if grace_info:
             print(f"{C.DIM}  Grace: blocs={grace_info}, "
                   f"inodes={dev_entries[0].get('inode_grace_policy', '')}{C.RESET}")
-        print(f"{C.DIM}  Total utilis�: {human_size(total_used)} � "
-              f"{human_count(total_files)} fichiers � "
+        print(f"{C.DIM}  Total utilisé: {human_size(total_used)} — "
+              f"{human_count(total_files)} fichiers — "
               f"{len(dev_entries)} utilisateurs actifs{C.RESET}")
-        print(f"{C.BOLD}{C.CYAN}{'-' * 90}{C.RESET}")
+        print(f"{C.BOLD}{C.CYAN}{'═' * 90}{C.RESET}")
         print()
 
-        # En-t�tes colonnes
-        print(f"  {C.BOLD}{'Utilisateur':<16} {'Utilis�':>10}  "
+        # En-têtes colonnes
+        print(f"  {C.BOLD}{'Utilisateur':<16} {'Utilisé':>10}  "
               f"{'Quota':>10}  {'Espace':^32}  "
               f"{'Fichiers':>10}  {'Quota F.':>10}{C.RESET}")
-        print(f"  {C.DIM}{'-' * 16} {'-' * 10}  {'-' * 10}  "
-              f"{'-' * 32}  {'-' * 10}  {'-' * 10}{C.RESET}")
+        print(f"  {C.DIM}{'─' * 16} {'─' * 10}  {'─' * 10}  "
+              f"{'─' * 32}  {'─' * 10}  {'─' * 10}{C.RESET}")
 
         for e in dev_entries:
             user = e["user"]
@@ -225,16 +225,16 @@ def print_report(entries: list[dict], sort_by: str = "used", show_zero: bool = F
             # Indicateur d'alerte
             alert = ""
             if e["block_over"]:
-                alert = f" {C.RED}? D�PASS�{C.RESET}"
+                alert = f" {C.RED}⚠ DÉPASSÉ{C.RESET}"
                 if e["block_grace"]:
                     alert += f" {C.RED}({e['block_grace']}){C.RESET}"
 
-            # Le quota affich� = soft s'il existe, sinon hard
+            # Le quota affiché = soft s'il existe, sinon hard
             quota_ref = b_soft if b_soft > 0 else b_hard
 
             bar = pct_bar(b_used, quota_ref)
 
-            f_quota_str = human_count(f_soft) if f_soft > 0 else f"{C.DIM}�{C.RESET}"
+            f_quota_str = human_count(f_soft) if f_soft > 0 else f"{C.DIM}—{C.RESET}"
 
             print(f"  {C.WHITE}{user:<16}{C.RESET} "
                   f"{human_size(b_used):>10}  "
@@ -247,7 +247,7 @@ def print_report(entries: list[dict], sort_by: str = "used", show_zero: bool = F
         print()
 
 
-# -- Main -----------------------------------------------------------------------
+# ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(
@@ -259,14 +259,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("file", nargs="?", default="-",
-                        help="Fichier d'entr�e (d�faut: stdin)")
+                        help="Fichier d'entrée (défaut: stdin)")
     parser.add_argument("-s", "--sort", choices=["used", "pct", "name", "files"],
                         default="used",
-                        help="Tri: used (d�faut), pct, name, files")
+                        help="Tri: used (défaut), pct, name, files")
     parser.add_argument("-z", "--show-zero", action="store_true",
                         help="Afficher les utilisateurs sans usage")
     parser.add_argument("--no-color", action="store_true",
-                        help="D�sactiver les couleurs ANSI")
+                        help="Désactiver les couleurs ANSI")
 
     args = parser.parse_args()
 
@@ -286,4 +286,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
